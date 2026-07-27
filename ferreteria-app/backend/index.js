@@ -230,5 +230,5 @@ app.delete('/api/ventas/:id', (req, res) => {
 // Levantar el servidor
 const PORT = process.env.PORT || 3306;
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`🚀 Servidor corriendo en http://backend-production-4d48.up.railway.app:${PORT}`);
 });
