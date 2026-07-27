@@ -21,7 +21,7 @@ const Clientes = () => {
     // 1. Obtener todos los clientes desde el backend
     const obtenerClientes = async () => {
         try {
-            const respuesta = await fetch('http://localhost:3000/api/clientes');
+            const respuesta = await fetch('http://backend-production-4d48.up.railway.app/api/clientes');
             const datos = await respuesta.json();
             setClientes(datos);
         } catch (error) {
@@ -47,8 +47,8 @@ const Clientes = () => {
         
         try {
             const url = editandoId 
-                ? `http://localhost:3000/api/clientes/${editandoId}` 
-                : 'http://localhost:3000/api/clientes';
+                ? `http://backend-production-4d48.up.railway.app/api/clientes/${editandoId}` 
+                : 'http://backend-production-4d48.up.railway.app/api/clientes';
             
             const metodo = editandoId ? 'PUT' : 'POST';
 
@@ -92,7 +92,7 @@ const Clientes = () => {
         if (!window.confirm('¿Estás seguro de que deseas eliminar este cliente?')) return;
 
         try {
-            const respuesta = await fetch(`http://localhost:3000/api/clientes/${id}`, {
+            const respuesta = await fetch(`http://backend-production-4d48.up.railway.app/api/clientes/${id}`, {
                 method: 'DELETE'
             });
 

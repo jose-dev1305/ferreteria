@@ -15,12 +15,12 @@ function Productos() {
 
   // Cargar productos y proveedores desde la API
   const cargarDatos = () => {
-    fetch('http://localhost:3000/api/productos')
+    fetch('http://backend-production-4d48.up.railway.app/api/productos')
       .then((res) => res.json())
       .then((data) => setProductos(data))
       .catch((err) => console.error('Error al cargar productos:', err));
 
-    fetch('http://localhost:3000/api/proveedores')
+    fetch('http://backend-production-4d48.up.railway.app/api/proveedores')
       .then((res) => res.json())
       .then((data) => setProveedores(data))
       .catch((err) => console.error('Error al cargar proveedores:', err));
@@ -51,7 +51,7 @@ function Productos() {
   // Eliminar producto
   const handleEliminarClick = (id) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este producto del inventario?')) {
-      fetch(`http://localhost:3000/api/productos/${id}`, {
+      fetch(`http://backend-production-4d48.up.railway.app/api/productos/${id}`, {
         method: 'DELETE'
       })
         .then((res) => res.json())
@@ -69,8 +69,8 @@ function Productos() {
 
     const esEdicion = idEditando !== null;
     const url = esEdicion
-      ? `http://localhost:3000/api/productos/${idEditando}`
-      : 'http://localhost:3000/api/productos';
+      ? `http://backend-production-4d48.up.railway.app/api/productos/${idEditando}`
+      : 'http://backend-production-4d48.up.railway.app/api/productos';
     const method = esEdicion ? 'PUT' : 'POST';
 
     fetch(url, {

@@ -19,21 +19,21 @@ function Ventas() {
 
   // Cargar datos iniciales
   const cargarVentas = () => {
-    fetch('http://localhost:3000/api/ventas')
+    fetch('http://backend-production-4d48.up.railway.app/api/ventas')
       .then((res) => res.json())
       .then((data) => setVentas(data))
       .catch((err) => console.error('Error al cargar ventas:', err));
   };
 
   const cargarProductos = () => {
-    fetch('http://localhost:3000/api/productos')
+    fetch('http://backend-production-4d48.up.railway.app/api/productos')
       .then((res) => res.json())
       .then((data) => setProductos(data))
       .catch((err) => console.error('Error al cargar productos:', err));
   };
 
   const cargarClientes = () => {
-    fetch('http://localhost:3000/api/clientes')
+    fetch('http://backend-production-4d48.up.railway.app/api/clientes')
       .then((res) => res.json())
       .then((data) => setClientes(data))
       .catch((err) => console.error('Error al cargar clientes:', err));
@@ -116,7 +116,7 @@ function Ventas() {
   // Eliminar venta
   const handleEliminarClick = (id) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este registro de venta?')) {
-      fetch(`http://localhost:3000/api/ventas/${id}`, {
+      fetch(`http://backend-production-4d48.up.railway.app/api/ventas/${id}`, {
         method: 'DELETE'
       })
         .then((res) => res.json())
@@ -142,7 +142,7 @@ function Ventas() {
         fecha_venta: formVenta.fecha_venta
       };
 
-      fetch(`http://localhost:3000/api/ventas/${idEditando}`, {
+      fetch(`http://backend-production-4d48.up.railway.app/api/ventas/${idEditando}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(datosActualizados)
@@ -163,7 +163,7 @@ function Ventas() {
       productos: itemsVenta
     };
 
-    fetch('http://localhost:3000/api/ventas', {
+    fetch('http://backend-production-4d48.up.railway.app/api/ventas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(datosNuevos)
