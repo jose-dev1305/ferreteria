@@ -11,12 +11,12 @@ app.use(express.json());
 
 // Configuración de la conexión a MySQL
 const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+    host: process.env.DB_HOST || process.env.MYSQLHOST,
+    user: process.env.DB_USER || process.env.MYSQLUSER,
+    password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD,
+    database: process.env.DB_NAME || process.env.MYSQLDATABASE,
+    port: process.env.DB_PORT || process.env.MYSQLPORT || 3306
 });
-
 // Verificando las pruebas de funcionamiento de la conexión
 db.connect((err) => {
     if (err) {
@@ -228,7 +228,7 @@ app.delete('/api/ventas/:id', (req, res) => {
 });
 
 // Levantar el servidor
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3306;
 app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
 });
