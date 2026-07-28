@@ -9,10 +9,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Obtener y parsear el puerto de la base de datos
+// 1. OBTENCIÓN Y VALIDACIÓN DE PUERTOS
 const dbPort = Number(process.env.DB_PORT || process.env.MYSQLPORT || 14571);
 
-// Pool de conexiones con soporte SSL para conexiones externas a Railway
+// Evitamos que Express intente escuchar en el mismo puerto que la base de datos
+let serverPort = process.env.PORT || 3000;
+if (Number(serverPort) === dbPort) {
+    serverPort = 3000;
+}
+
+// 2. POOL DE CONEXIONES A MYSQL (Con soporte SSL para Railway)
 const db = mysql.createPool({
     host: process.env.DB_HOST || process.env.MYSQLHOST,
     user: process.env.DB_USER || process.env.MYSQLUSER,
@@ -22,7 +28,6 @@ const db = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    // Permite la conexión SSL requerida por los proxies públicos de Railway
     ssl: {
         rejectUnauthorized: false
     }
@@ -42,7 +47,7 @@ db.getConnection((err, connection) => {
 
 // Ruta de prueba
 app.get('/', (req, res) => {
-    res.send('API de la Ferretería funcionando al 100% en Railway');
+    res.send('API de la Ferretería funcionando al 100%');
 });
 
 // --- RUTAS GET (CONSULTAS) ---
@@ -303,8 +308,7 @@ app.delete('/api/ventas/:id', (req, res) => {
     });
 });
 
-// Levantar el servidor
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+// LEVANTAR EL SERVIDOR EXPRESS
+app.listen(serverPort, () => {
+    console.log(`🚀 Servidor Express corriendo en el puerto ${serverPort}`);
 });
