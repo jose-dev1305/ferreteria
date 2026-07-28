@@ -69,10 +69,17 @@ function Proveedores() {
     const url = esEdicion ? `${API_URL}/${idEditando}` : API_URL;
     const method = esEdicion ? 'PUT' : 'POST';
 
+    // Limpieza de espacios en blanco
+    const payload = {
+      nombre_empresa: formProveedor.nombre_empresa.trim(),
+      telefono: formProveedor.telefono.trim(),
+      direccion: formProveedor.direccion.trim()
+    };
+
     fetch(url, {
       method: method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formProveedor)
+      body: JSON.stringify(payload)
     })
       .then((res) => res.json())
       .then((data) => {
@@ -213,8 +220,9 @@ function Proveedores() {
               />
             </div>
 
+            {/* Contador basado en proveedores filtrados */}
             <div className="bg-blue-600/10 text-blue-400 font-extrabold text-xs px-4 py-3 rounded-xl border border-blue-500/20 text-center">
-              Total: {proveedores.length}
+              Total: {proveedoresFiltrados.length}
             </div>
           </div>
         </div>

@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 
+// Endpoints HTTPS centralizados
+const API_BASE = 'https://backend-production-4d48.up.railway.app/api';
+
 function Ventas() {
   const [ventas, setVentas] = useState([]);
   const [productos, setProductos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [idEditando, setIdEditando] = useState(null);
+  const [busqueda, setBusqueda] = useState('');
 
   // Datos principales del formulario
   const [formVenta, setFormVenta] = useState({
@@ -17,25 +21,34 @@ function Ventas() {
     { id_producto: '', precio_unitario: 0, cantidad: 1 }
   ]);
 
-  // Cargar datos iniciales
+  // Cargar datos iniciales desde la API
   const cargarVentas = () => {
-    fetch('http://backend-production-4d48.up.railway.app/api/ventas')
-      .then((res) => res.json())
-      .then((data) => setVentas(data))
+    fetch(`${API_BASE}/ventas`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Error al obtener ventas');
+        return res.json();
+      })
+      .then((data) => setVentas(Array.isArray(data) ? data : []))
       .catch((err) => console.error('Error al cargar ventas:', err));
   };
 
   const cargarProductos = () => {
-    fetch('http://backend-production-4d48.up.railway.app/api/productos')
-      .then((res) => res.json())
-      .then((data) => setProductos(data))
+    fetch(`${API_BASE}/productos`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Error al obtener productos');
+        return res.json();
+      })
+      .then((data) => setProductos(Array.isArray(data) ? data : []))
       .catch((err) => console.error('Error al cargar productos:', err));
   };
 
   const cargarClientes = () => {
-    fetch('http://backend-production-4d48.up.railway.app/api/clientes')
-      .then((res) => res.json())
-      .then((data) => setClientes(data))
+    fetch(`${API_BASE}/clientes`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Error al obtener clientes');
+        return res.json();
+      })
+      .then((data) => setClientes(Array.isArray(data) ? data : []))
       .catch((err) => console.error('Error al cargar clientes:', err));
   };
 
@@ -116,7 +129,7 @@ function Ventas() {
   // Eliminar venta
   const handleEliminarClick = (id) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este registro de venta?')) {
-      fetch(`http://backend-production-4d48.up.railway.app/api/ventas/${id}`, {
+      fetch(`${API_BASE}/ventas/${id}`, {
         method: 'DELETE'
       })
         .then((res) => res.json())
@@ -128,7 +141,7 @@ function Ventas() {
     }
   };
 
-  // Enviar formulario
+  // Enviar formulario (Guardar / Actualizar)
   const handleVentaSubmit = (e) => {
     e.preventDefault();
     const esEdicion = idEditando !== null;
@@ -142,7 +155,7 @@ function Ventas() {
         fecha_venta: formVenta.fecha_venta
       };
 
-      fetch(`http://backend-production-4d48.up.railway.app/api/ventas/${idEditando}`, {
+      fetch(`${API_BASE}/ventas/${idEditando}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(datosActualizados)
@@ -163,7 +176,7 @@ function Ventas() {
       productos: itemsVenta
     };
 
-    fetch('http://backend-production-4d48.up.railway.app/api/ventas', {
+    fetch(`${API_BASE}/ventas`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(datosNuevos)
@@ -177,196 +190,264 @@ function Ventas() {
       .catch((err) => console.error('Error al registrar venta:', err));
   };
 
+  // Filtrar ventas por búsqueda
+  const ventasFiltradas = ventas.filter((vta) => {
+    const texto = busqueda.toLowerCase();
+    const producto = (vta.producto || '').toLowerCase();
+    const cliente = (vta.cliente || '').toLowerCase();
+    const id = String(vta.id_venta || vta.id || '');
+    const fecha = vta.fecha_venta ? new Date(vta.fecha_venta).toLocaleDateString() : '';
+
+    return producto.includes(texto) || cliente.includes(texto) || id.includes(texto) || fecha.includes(texto);
+  });
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Formulario de Registro / Edición */}
-      <div className="bg-white shadow-md rounded-lg p-6 w-full lg:w-3/4">
-        <h2 className="text-xl font-semibold mb-4 text-slate-800">
-          {idEditando ? '✏️ Editar Venta' : '🛒 Registrar Venta y Calcular Cuenta'}
-        </h2>
-        
-        <form onSubmit={handleVentaSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-8 animate-fade-in pb-12 w-full text-slate-100">
+      {/* Formulario Estilo Dark Dashboard */}
+      <div className="bg-slate-900/90 backdrop-blur-xl shadow-2xl rounded-2xl p-6 md:p-8 border border-slate-800 w-full">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 pb-4 border-b border-slate-800 gap-4">
+          <div>
+            <h2 className="text-xl md:text-2xl font-extrabold text-white flex items-center gap-3">
+              <span className="p-2.5 bg-orange-600/20 text-orange-400 rounded-xl text-lg border border-orange-500/30">🛒</span>
+              {idEditando ? 'Actualizar Registro de Venta' : 'Módulo de Facturación y Ventas'}
+            </h2>
+            <p className="text-sm text-slate-400 mt-1">
+              {idEditando ? `Editando la venta ID: #${idEditando}` : 'Seleccione el cliente, agregue los productos y liquide la transacción.'}
+            </p>
+          </div>
+          {idEditando && (
+            <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold text-xs px-3.5 py-1.5 rounded-lg uppercase tracking-wider">
+              Modo Edición Activo
+            </span>
+          )}
+        </div>
+
+        <form onSubmit={handleVentaSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Selector de Cliente */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Cliente:</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                Cliente
+              </label>
               <select
                 required
                 value={formVenta.id_cliente}
                 onChange={(e) => setFormVenta({ ...formVenta, id_cliente: e.target.value })}
-                className="w-full p-2.5 border rounded-lg bg-white text-slate-700 focus:ring focus:ring-amber-200 outline-none"
+                className="w-full p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl focus:bg-slate-950 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 outline-none text-white font-medium transition-all text-sm"
               >
-                <option value="">Selecciona un cliente</option>
+                <option value="" className="bg-slate-900 text-slate-400">Seleccione un cliente...</option>
                 {clientes.map((cli) => (
-                  <option key={cli.id_cliente} value={cli.id_cliente}>
+                  <option key={cli.id_cliente} value={cli.id_cliente} className="bg-slate-900 text-white">
                     {cli.nombre}
                   </option>
                 ))}
               </select>
             </div>
 
+            {/* Fecha de Venta */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Fecha de Venta:</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                Fecha de Venta
+              </label>
               <input
                 type="date"
                 required
                 value={formVenta.fecha_venta}
                 onChange={(e) => setFormVenta({ ...formVenta, fecha_venta: e.target.value })}
-                className="w-full p-2.5 border rounded-lg focus:ring focus:ring-amber-200 outline-none"
+                className="w-full p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl focus:bg-slate-950 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 outline-none text-white font-medium transition-all text-sm"
               />
             </div>
           </div>
 
           {/* Sección Dinámica de Productos */}
-          <div className="border-t pt-4 mt-4">
-            <div className="flex justify-between items-center mb-3">
-              <label className="block font-bold text-slate-800">Detalle de Productos y Precios:</label>
+          <div className="border-t border-slate-800 pt-6 mt-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+              <label className="text-sm font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <span>📦</span> Productos y Detalle de Cuenta
+              </label>
               {!idEditando && (
                 <button
                   type="button"
                   onClick={agregarFilaProducto}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                  className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
                 >
-                  + Agregar otro producto
+                  <span>➕</span> Agregar otro producto
                 </button>
               )}
             </div>
 
-            {itemsVenta.map((item, index) => {
-              const subtotal = (Number(item.precio_unitario) || 0) * (Number(item.cantidad) || 0);
-              return (
-                <div key={index} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center mb-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-                  {/* Selector de Producto */}
-                  <div className="sm:col-span-5">
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Producto</label>
-                    <select
-                      required
-                      value={item.id_producto}
-                      onChange={(e) => actualizarFilaItem(index, 'id_producto', e.target.value)}
-                      className="w-full p-2 border rounded-lg bg-white text-slate-700 outline-none text-sm"
-                    >
-                      <option value="">Seleccione producto</option>
-                      {productos.map((prod) => (
-                        <option key={prod.id_producto} value={prod.id_producto}>
-                          {prod.nombre} (Stock: {prod.stock})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Precio Unitario (Automático) */}
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Precio Unit.</label>
-                    <div className="p-2 bg-white border rounded-lg text-sm font-medium text-slate-700 text-right">
-                      ${Number(item.precio_unitario).toFixed(2)}
-                    </div>
-                  </div>
-
-                  {/* Cantidad */}
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Cantidad</label>
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      value={item.cantidad}
-                      onChange={(e) => actualizarFilaItem(index, 'cantidad', e.target.value)}
-                      className="w-full p-2 border rounded-lg outline-none text-sm text-center font-semibold"
-                    />
-                  </div>
-
-                  {/* Subtotal */}
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Subtotal</label>
-                    <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg text-sm font-bold text-amber-700 text-right">
-                      ${subtotal.toFixed(2)}
-                    </div>
-                  </div>
-
-                  {/* Botón Eliminar Fila */}
-                  <div className="sm:col-span-1 flex justify-center items-end pt-5">
-                    {itemsVenta.length > 1 && !idEditando && (
-                      <button
-                        type="button"
-                        onClick={() => eliminarFilaProducto(index)}
-                        className="bg-red-500 hover:bg-red-600 text-white w-9 h-9 rounded-lg text-sm transition-colors flex items-center justify-center font-bold"
+            <div className="space-y-3">
+              {itemsVenta.map((item, index) => {
+                const subtotal = (Number(item.precio_unitario) || 0) * (Number(item.cantidad) || 0);
+                return (
+                  <div key={index} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+                    {/* Selector de Producto */}
+                    <div className="sm:col-span-5">
+                      <label className="block text-xs font-bold text-slate-400 mb-1">Producto</label>
+                      <select
+                        required
+                        value={item.id_producto}
+                        onChange={(e) => actualizarFilaItem(index, 'id_producto', e.target.value)}
+                        className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm outline-none focus:border-orange-500"
                       >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                        <option value="" className="bg-slate-900 text-slate-400">Seleccione producto</option>
+                        {productos.map((prod) => (
+                          <option key={prod.id_producto} value={prod.id_producto} className="bg-slate-900 text-white">
+                            {prod.nombre} (Stock: {prod.stock})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-            {/* Total a Pagar en Grande */}
-            <div className="bg-slate-900 text-white p-4 rounded-xl flex justify-between items-center mt-4 shadow-md">
-              <span className="text-base font-medium tracking-wide">Total General a Pagar:</span>
-              <span className="text-2xl font-black text-amber-400">
+                    {/* Precio Unitario */}
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-400 mb-1">Precio Unit.</label>
+                      <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-sm font-bold text-slate-300 text-right">
+                        ${Number(item.precio_unitario).toFixed(2)}
+                      </div>
+                    </div>
+
+                    {/* Cantidad */}
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-400 mb-1">Cantidad</label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        value={item.cantidad}
+                        onChange={(e) => actualizarFilaItem(index, 'cantidad', e.target.value)}
+                        className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-center font-bold text-white outline-none focus:border-orange-500"
+                      />
+                    </div>
+
+                    {/* Subtotal */}
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-400 mb-1">Subtotal</label>
+                      <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-sm font-black text-amber-400 text-right">
+                        ${subtotal.toFixed(2)}
+                      </div>
+                    </div>
+
+                    {/* Botón Eliminar Fila */}
+                    <div className="sm:col-span-1 flex justify-center items-end pt-2 sm:pt-5">
+                      {itemsVenta.length > 1 && !idEditando && (
+                        <button
+                          type="button"
+                          onClick={() => eliminarFilaProducto(index)}
+                          className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 w-9 h-9 rounded-lg text-xs font-bold transition-all flex items-center justify-center"
+                          title="Eliminar fila"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Total General a Pagar */}
+            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 text-white p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-center mt-6 shadow-xl gap-2">
+              <span className="text-sm font-bold uppercase tracking-wider text-slate-400">Total General a Pagar:</span>
+              <span className="text-3xl font-black text-amber-400 font-mono">
                 ${calcularTotalPagar().toFixed(2)}
               </span>
             </div>
           </div>
 
-          <div className="flex space-x-3 pt-3">
+          {/* Botones de Acción */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 pt-4 border-t border-slate-800">
             <button
               type="submit"
-              className={`w-full p-3 rounded-xl text-white font-bold transition-colors shadow-sm ${
-                idEditando ? 'bg-amber-500 hover:bg-amber-600' : 'bg-orange-600 hover:bg-orange-700'
+              className={`w-full sm:flex-1 py-3.5 px-6 rounded-xl text-white font-bold transition-all shadow-lg flex items-center justify-center gap-2 text-sm ${
+                idEditando 
+                  ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-900/30' 
+                  : 'bg-orange-600 hover:bg-orange-500 shadow-orange-900/30'
               }`}
             >
-              {idEditando ? 'Actualizar Venta' : 'Confirmar y Registrar Venta'}
+              <span>{idEditando ? '💾' : '💳'}</span>
+              {idEditando ? 'Actualizar Registro de Venta' : 'Confirmar y Registrar Venta'}
             </button>
 
             {idEditando && (
               <button
                 type="button"
                 onClick={resetearFormulario}
-                className="w-1/3 bg-slate-400 text-white p-3 rounded-xl hover:bg-slate-500 font-bold transition-colors"
+                className="w-full sm:w-auto px-8 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition-colors text-sm border border-slate-700"
               >
-                Cancelar
+                Cancelar Edición
               </button>
             )}
           </div>
         </form>
       </div>
 
-      {/* Tabla de Historial de Ventas */}
-      <div className="bg-white shadow-md rounded-lg p-6">
-        <h2 className="text-xl font-semibold mb-3 text-slate-800">Historial de Ventas Registradas</h2>
-        <div className="overflow-x-auto">
+      {/* Historial de Ventas Registradas */}
+      <div className="bg-slate-900/90 backdrop-blur-xl shadow-2xl rounded-2xl p-6 md:p-8 border border-slate-800 w-full space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-800">
+          <div>
+            <h2 className="text-xl md:text-2xl font-extrabold text-white flex items-center gap-2">
+              <span>📋</span> Historial de Ventas Registradas
+            </h2>
+            <p className="text-sm text-slate-400 mt-1">Consulte las transacciones pasadas, modifique registros o elimine ventas.</p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
+            {/* Barra de Búsqueda */}
+            <div className="relative w-full sm:w-72">
+              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                🔍
+              </span>
+              <input
+                type="text"
+                placeholder="Buscar cliente, producto, fecha..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-sm font-medium focus:bg-slate-950 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 outline-none text-white transition-all"
+              />
+            </div>
+
+            {/* Contador de Ventas */}
+            <div className="bg-orange-600/10 text-orange-400 font-extrabold text-xs px-4 py-3 rounded-xl border border-orange-500/20 text-center">
+              Total: {ventasFiltradas.length}
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/40">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-orange-50 text-orange-800 text-sm">
-                <th className="p-3 border">ID</th>
-                <th className="p-3 border">Producto</th>
-                <th className="p-3 border">Cliente</th>
-                <th className="p-3 border">Cantidad</th>
-                <th className="p-3 border">Fecha de Venta</th>
-                <th className="p-3 border text-center">Acciones</th>
+              <tr className="bg-slate-950/80 text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-800">
+                <th className="p-4">ID</th>
+                <th className="p-4">Producto</th>
+                <th className="p-4">Cliente</th>
+                <th className="p-4">Cantidad</th>
+                <th className="p-4">Fecha de Venta</th>
+                <th className="p-4 text-center">Acciones</th>
               </tr>
             </thead>
-            <tbody className="text-sm">
-              {ventas.map((vta) => {
+            <tbody className="text-sm divide-y divide-slate-800/60">
+              {ventasFiltradas.map((vta) => {
                 const idVenta = vta.id_venta || vta.id;
                 return (
-                  <tr key={idVenta} className="hover:bg-slate-50">
-                    <td className="p-3 border">{idVenta}</td>
-                    <td className="p-3 border font-medium text-slate-800">{vta.producto || 'Producto desconocido'}</td>
-                    <td className="p-3 border text-slate-600">{vta.cliente || 'Cliente genérico'}</td>
-                    <td className="p-3 border font-semibold text-orange-600">{vta.cantidad} un.</td>
-                    <td className="p-3 border">
+                  <tr key={idVenta} className="hover:bg-slate-800/40 transition-colors">
+                    <td className="p-4 font-mono text-slate-500 font-bold">#{idVenta}</td>
+                    <td className="p-4 font-bold text-white">{vta.producto || 'Producto desconocido'}</td>
+                    <td className="p-4 text-slate-300 font-medium">{vta.cliente || 'Cliente genérico'}</td>
+                    <td className="p-4 text-orange-400 font-bold">{vta.cantidad} un.</td>
+                    <td className="p-4 text-slate-300">
                       {vta.fecha_venta ? new Date(vta.fecha_venta).toLocaleDateString() : '-'}
                     </td>
-                    <td className="p-3 border text-center space-x-2">
+                    <td className="p-4 text-center space-x-2">
                       <button
                         onClick={() => handleEditarClick(vta)}
-                        className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-md text-xs font-semibold transition-colors"
+                        className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all"
                       >
                         Editar
                       </button>
                       <button
                         onClick={() => handleEliminarClick(idVenta)}
-                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-xs font-semibold transition-colors"
+                        className="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all"
                       >
                         Eliminar
                       </button>
@@ -374,6 +455,13 @@ function Ventas() {
                   </tr>
                 );
               })}
+              {ventasFiltradas.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="text-center py-12 text-slate-500 font-medium text-sm">
+                    No se encontraron registros de ventas coincidentes.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
