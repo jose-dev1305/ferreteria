@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
+// URL base con HTTPS obligatorio para Railway
+const API_URL = 'https://backend-production-4d48.up.railway.app/api';
+
 function Productos() {
   const [productos, setProductos] = useState([]);
   const [proveedores, setProveedores] = useState([]);
@@ -13,17 +16,28 @@ function Productos() {
     id_proveedor: ''
   });
 
-  // Cargar productos y proveedores desde la API
+  // Cargar productos y proveedores desde la API con validación de arreglos
   const cargarDatos = () => {
-    fetch('http://backend-production-4d48.up.railway.app/api/productos')
+    fetch(`${API_URL}/productos`)
       .then((res) => res.json())
-      .then((data) => setProductos(data))
-      .catch((err) => console.error('Error al cargar productos:', err));
+      .then((data) => {
+        // Garantiza que la respuesta sea un arreglo para no romper la pantalla
+        setProductos(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error('Error al cargar productos:', err);
+        setProductos([]);
+      });
 
-    fetch('http://backend-production-4d48.up.railway.app/api/proveedores')
+    fetch(`${API_URL}/proveedores`)
       .then((res) => res.json())
-      .then((data) => setProveedores(data))
-      .catch((err) => console.error('Error al cargar proveedores:', err));
+      .then((data) => {
+        setProveedores(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error('Error al cargar proveedores:', err);
+        setProveedores([]);
+      });
   };
 
   useEffect(() => {
@@ -51,15 +65,21 @@ function Productos() {
   // Eliminar producto
   const handleEliminarClick = (id) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este producto del inventario?')) {
-      fetch(`http://backend-production-4d48.up.railway.app/api/productos/${id}`, {
+      fetch(`${API_URL}/productos/${id}`, {
         method: 'DELETE'
       })
-        .then((res) => res.json())
+        .then(async (res) => {
+          if (!res.ok) throw new Error('No se pudo eliminar el registro');
+          return res.json();
+        })
         .then((data) => {
-          alert(data.message || 'Producto eliminado');
+          alert(data.message || 'Producto eliminado exitosamente');
           cargarDatos();
         })
-        .catch((err) => console.error('Error al eliminar producto:', err));
+        .catch((err) => {
+          console.error('Error al eliminar producto:', err);
+          alert(`❌ Error: ${err.message}`);
+        });
     }
   };
 
@@ -67,31 +87,53 @@ function Productos() {
   const handleProductoSubmit = (e) => {
     e.preventDefault();
 
+    if (!formProducto.nombre || !formProducto.precio || !formProducto.id_proveedor) {
+      alert('Por favor completa todos los campos requeridos.');
+      return;
+    }
+
+    // Convertimos los tipos de datos requeridos por MySQL
+    const payload = {
+      nombre: formProducto.nombre.trim(),
+      precio: parseFloat(formProducto.precio),
+      stock: parseInt(formProducto.stock) || 0,
+      id_proveedor: parseInt(formProducto.id_proveedor)
+    };
+
     const esEdicion = idEditando !== null;
     const url = esEdicion
-      ? `http://backend-production-4d48.up.railway.app/api/productos/${idEditando}`
-      : 'http://backend-production-4d48.up.railway.app/api/productos';
+      ? `${API_URL}/productos/${idEditando}`
+      : `${API_URL}/productos`;
     const method = esEdicion ? 'PUT' : 'POST';
 
     fetch(url, {
       method: method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formProducto)
+      body: JSON.stringify(payload)
     })
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || data.message || 'Error en el servidor');
+        }
+        return data;
+      })
       .then((data) => {
         alert(data.message || (esEdicion ? 'Producto actualizado' : 'Producto registrado'));
         resetearFormulario();
         cargarDatos();
       })
-      .catch((err) => console.error('Error al procesar producto:', err));
+      .catch((err) => {
+        console.error('Error al procesar producto:', err);
+        alert(`❌ Error al guardar: ${err.message}`);
+      });
   };
 
-  // Filtrar productos según la barra de búsqueda
-  const productosFiltrados = productos.filter((prod) => {
+  // Filtrar productos de forma segura
+  const productosFiltrados = (Array.isArray(productos) ? productos : []).filter((prod) => {
     const texto = busqueda.toLowerCase();
     const nombreProd = (prod.nombre || '').toLowerCase();
-    const nombreProv = (prod.proveedor || '').toLowerCase();
+    const nombreProv = (prod.proveedor || prod.nombre_empresa || '').toLowerCase();
     return nombreProd.includes(texto) || nombreProv.includes(texto);
   });
 
@@ -179,9 +221,9 @@ function Productos() {
                 className="w-full p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl focus:bg-slate-950 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none text-white font-medium transition-all text-sm"
               >
                 <option value="" className="bg-slate-950 text-slate-400">Selecciona una empresa proveedora de la lista</option>
-                {proveedores.map((prov) => (
-                  <option key={prov.id_proveedor} value={prov.id_proveedor} className="bg-slate-950 text-white">
-                    {prov.nombre_empresa}
+                {(Array.isArray(proveedores) ? proveedores : []).map((prov) => (
+                  <option key={prov.id_proveedor || prov.id} value={prov.id_proveedor || prov.id} className="bg-slate-950 text-white">
+                    {prov.nombre_empresa || prov.nombre || 'Proveedor sin nombre'}
                   </option>
                 ))}
               </select>
@@ -241,7 +283,7 @@ function Productos() {
             </div>
 
             <div className="bg-blue-600/10 text-blue-400 font-extrabold text-xs px-4 py-3 rounded-xl border border-blue-500/20 text-center">
-              Total: {productos.length}
+              Total: {productosFiltrados.length}
             </div>
           </div>
         </div>
@@ -266,17 +308,17 @@ function Productos() {
                   <tr key={idProd} className="hover:bg-slate-800/40 transition-colors">
                     <td className="p-4 font-mono text-slate-500 font-bold">#{idProd}</td>
                     <td className="p-4 font-bold text-white">{prod.nombre}</td>
-                    <td className="p-4 font-black text-emerald-400">${Number(prod.precio).toFixed(2)}</td>
+                    <td className="p-4 font-black text-emerald-400">${Number(prod.precio || 0).toFixed(2)}</td>
                     <td className="p-4">
                       <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-extrabold ${
                         stockBajo 
                           ? 'bg-red-500/10 text-red-400 border border-red-500/20' 
                           : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                       }`}>
-                        {prod.stock} un. {stockBajo && '⚠️'}
+                        {prod.stock || 0} un. {stockBajo && '⚠️'}
                       </span>
                     </td>
-                    <td className="p-4 text-slate-300 font-medium">{prod.proveedor || 'Sin proveedor'}</td>
+                    <td className="p-4 text-slate-300 font-medium">{prod.proveedor || prod.nombre_empresa || 'Sin proveedor'}</td>
                     <td className="p-4 text-center space-x-2">
                       <button
                         onClick={() => handleEditarClick(prod)}

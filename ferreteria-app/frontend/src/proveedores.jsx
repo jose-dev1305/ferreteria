@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
+// URL centralizada con HTTPS
+const API_URL = 'https://backend-production-4d48.up.railway.app/api/proveedores';
+
 function Proveedores() {
   const [proveedores, setProveedores] = useState([]);
   const [idEditando, setIdEditando] = useState(null);
@@ -13,9 +16,12 @@ function Proveedores() {
 
   // Cargar proveedores desde la API
   const cargarProveedores = () => {
-    fetch('http://backend-production-4d48.up.railway.app/api/proveedores')
-      .then((res) => res.json())
-      .then((data) => setProveedores(data))
+    fetch(API_URL)
+      .then((res) => {
+        if (!res.ok) throw new Error('Error al obtener proveedores');
+        return res.json();
+      })
+      .then((data) => setProveedores(Array.isArray(data) ? data : []))
       .catch((err) => console.error('Error al cargar proveedores:', err));
   };
 
@@ -43,7 +49,7 @@ function Proveedores() {
   // Eliminar proveedor
   const handleEliminarClick = (id) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este proveedor?')) {
-      fetch(`http://backend-production-4d48.up.railway.app/api/proveedores/${id}`, {
+      fetch(`${API_URL}/${id}`, {
         method: 'DELETE'
       })
         .then((res) => res.json())
@@ -60,9 +66,7 @@ function Proveedores() {
     e.preventDefault();
 
     const esEdicion = idEditando !== null;
-    const url = esEdicion
-      ? `http://backend-production-4d48.up.railway.app/api/proveedores/${idEditando}`
-      : 'http://backend-production-4d48.up.railway.app/api/proveedores';
+    const url = esEdicion ? `${API_URL}/${idEditando}` : API_URL;
     const method = esEdicion ? 'PUT' : 'POST';
 
     fetch(url, {
