@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
-// URL base con HTTPS obligatorio para Railway
-const API_URL = 'https://backend-production-4d48.up.railway.app/api';
+// Manejo dinámico de la URL mediante variable de entorno con respaldo
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://backend-production-4d48.up.railway.app';
+const API_BASE = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL}/api`;
 
 function Productos() {
   const [productos, setProductos] = useState([]);
@@ -18,7 +19,7 @@ function Productos() {
 
   // Cargar productos y proveedores desde la API con validación de arreglos
   const cargarDatos = () => {
-    fetch(`${API_URL}/productos`)
+    fetch(`${API_BASE}/productos`)
       .then((res) => res.json())
       .then((data) => {
         // Garantiza que la respuesta sea un arreglo para no romper la pantalla
@@ -29,7 +30,7 @@ function Productos() {
         setProductos([]);
       });
 
-    fetch(`${API_URL}/proveedores`)
+    fetch(`${API_BASE}/proveedores`)
       .then((res) => res.json())
       .then((data) => {
         setProveedores(Array.isArray(data) ? data : []);
@@ -65,7 +66,7 @@ function Productos() {
   // Eliminar producto
   const handleEliminarClick = (id) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este producto del inventario?')) {
-      fetch(`${API_URL}/productos/${id}`, {
+      fetch(`${API_BASE}/productos/${id}`, {
         method: 'DELETE'
       })
         .then(async (res) => {
@@ -102,8 +103,8 @@ function Productos() {
 
     const esEdicion = idEditando !== null;
     const url = esEdicion
-      ? `${API_URL}/productos/${idEditando}`
-      : `${API_URL}/productos`;
+      ? `${API_BASE}/productos/${idEditando}`
+      : `${API_BASE}/productos`;
     const method = esEdicion ? 'PUT' : 'POST';
 
     fetch(url, {

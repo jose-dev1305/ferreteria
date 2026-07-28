@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 
-// URL centralizada con HTTPS
-const API_URL = 'https://backend-production-4d48.up.railway.app/api/proveedores';
+// Manejo dinámico de la URL mediante variable de entorno con respaldo
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://backend-production-4d48.up.railway.app';
+const API_BASE = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL}/api`;
+const API_URL = `${API_BASE}/proveedores`;
 
 function Proveedores() {
   const [proveedores, setProveedores] = useState([]);

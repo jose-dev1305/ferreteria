@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
-// Endpoint HTTPS centralizado
-const API_BASE = 'https://backend-production-4d48.up.railway.app/api';
+// Manejo dinámico de la URL mediante variable de entorno con respaldo
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://backend-production-4d48.up.railway.app';
+const API_BASE = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL}/api`;
 
 const Clientes = () => {
   // Estado para el formulario con los campos de la base de datos

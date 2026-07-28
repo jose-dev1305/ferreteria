@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
 
+// Manejo dinámico de la URL mediante variable de entorno con respaldo
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://backend-production-4d48.up.railway.app';
+const API_BASE = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL}/api`;
+
 function Inicio() {
   const [stats, setStats] = useState({
     productos: 0,
@@ -11,10 +15,10 @@ function Inicio() {
   // Cargar estadísticas en tiempo real desde la API
   useEffect(() => {
     Promise.all([
-      fetch('http://backend-production-4d48.up.railway.app/api/productos').then((res) => res.json()),
-      fetch('http://backend-production-4d48.up.railway.app/api/clientes').then((res) => res.json()),
-      fetch('http://backend-production-4d48.up.railway.app/api/proveedores').then((res) => res.json()),
-      fetch('http://backend-production-4d48.up.railway.app/api/ventas').then((res) => res.json())
+      fetch(`${API_BASE}/productos`).then((res) => res.json()),
+      fetch(`${API_BASE}/clientes`).then((res) => res.json()),
+      fetch(`${API_BASE}/proveedores`).then((res) => res.json()),
+      fetch(`${API_BASE}/ventas`).then((res) => res.json())
     ])
       .then(([prod, cli, prov, vta]) => {
         setStats({
