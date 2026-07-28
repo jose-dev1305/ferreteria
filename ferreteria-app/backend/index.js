@@ -9,29 +9,38 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Pool de conexiones (mantiene la conexión viva en Railway automáticamente)
+// Obtener y parsear el puerto de la base de datos
+const dbPort = Number(process.env.DB_PORT || process.env.MYSQLPORT || 14571);
+
+// Pool de conexiones con soporte SSL para conexiones externas a Railway
 const db = mysql.createPool({
     host: process.env.DB_HOST || process.env.MYSQLHOST,
     user: process.env.DB_USER || process.env.MYSQLUSER,
     password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD,
     database: process.env.DB_NAME || process.env.MYSQLDATABASE,
-    port: process.env.DB_PORT || process.env.MYSQLPORT || 3306,
+    port: dbPort,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    // Permite la conexión SSL requerida por los proxies públicos de Railway
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
-// Verificar que la conexión a la base de datos funcione al iniciar
+// Verificar la conexión a la base de datos al iniciar
 db.getConnection((err, connection) => {
     if (err) {
-        console.error('❌ Error conectando a la base de datos en Railway:', err.message);
+        console.error('❌ Error conectando a la base de datos MySQL:');
+        console.error(`   Detalle: ${err.message}`);
+        console.error(`   Host: ${process.env.DB_HOST || process.env.MYSQLHOST}:${dbPort}`);
         return;
     }
     console.log('✅ Conectado exitosamente a la base de datos MySQL en Railway');
     connection.release();
 });
 
-// Ruta de prueba para el navegador
+// Ruta de prueba
 app.get('/', (req, res) => {
     res.send('API de la Ferretería funcionando al 100% en Railway');
 });
@@ -39,7 +48,6 @@ app.get('/', (req, res) => {
 // --- RUTAS GET (CONSULTAS) ---
 
 app.get('/api/productos', (req, res) => {
-    // COALESCE evita problemas si no existe el proveedor o si nombre_empresa viene nulo
     const query = `
         SELECT 
             p.id_producto, 
@@ -103,7 +111,6 @@ app.get('/api/ventas', (req, res) => {
         res.json(results);
     });
 });
-
 
 // --- RUTAS POST (REGISTROS) ---
 
@@ -175,7 +182,7 @@ app.post('/api/ventas', (req, res) => {
         });
 
         Promise.all(queries)
-            .then(() => res.json({ message: '¡Ventas con múltiples productos registradas exitosamente!' }))
+            .then(() => res.json({ message: '¡Ventas registradas exitosamente!' }))
             .catch(err => {
                 console.error('❌ Error en POST /api/ventas (múltiples):', err.message);
                 res.status(500).json({ error: err.message });
@@ -184,7 +191,6 @@ app.post('/api/ventas', (req, res) => {
         res.status(400).json({ error: 'No se proporcionaron productos para la venta' });
     }
 });
-
 
 // --- RUTAS PUT Y DELETE (MODIFICAR Y ELIMINAR) ---
 
